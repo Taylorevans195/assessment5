@@ -1,6 +1,43 @@
+require('dotenv').config()
+const {CONNECTION_STRING} = process.env
+const Sequelize = require('sequelize')
 
-
+const sequelize = new Sequelize(CONNECTION_STRING, {
+    dialect: 'postgres', 
+    dialectOptions: {
+        ssl: {
+            rejectUnauthorized: false
+        }
+    }
+})
+    
 module.exports = {
+    getCountries: (req,res)=>{
+        sequelize.query(`select * from countries`).then(dbres => res.status(200).send(dbres[0]))},
+    
+    createCity: (req,res) => {
+        let {name, rating, countryId} = req.body
+        sequelize.query(`insert into cities (name, rating, countryId) values(${name}, ${rating}, ${countryId})`)
+        .then((dbRes) => {
+            res.status(200).send(dbRes[0])
+         })
+    },
+
+    getCities: (req,res) => {
+        sequelize.query(`select c.name as city, city_id, rating, co.country_id, co.name as country from cities as c join countries as co on c.country_id = co.country_id order by rating desc`)
+       .then((dbRes) => {
+        res.status(200).send(dbRes[0])
+     })
+    },
+
+    deleteCities: (req,res) => {
+        sequelize.query(`delete from cities where city_id = ${req.params.id}`)
+        .then((dbRes) => {
+            res.status(200).send(dbRes[0])
+         })
+    },
+    
+
     seed: (req, res) => {
         sequelize.query(`
             drop table if exists cities;
@@ -11,7 +48,14 @@ module.exports = {
                 name varchar
             );
 
-            *****YOUR CODE HERE*****
+            CREATE TABLE cities (
+                city_id serial PRIMARY KEY,
+                name varchar,
+                rating integer,
+                country_id integer REFERENCES countries(country_id)
+            );
+            
+
 
             insert into countries (name)
             values ('Afghanistan'),
